@@ -129,3 +129,4 @@ def draw():
 			
 	
 init()
+print("Test")
