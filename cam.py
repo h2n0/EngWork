@@ -1,6 +1,7 @@
 from LCD import *
 import RPi.GPIO as GPIO
 import time as t
+import subprocess as sp
 
 version = "0.2"
 lcd = LCD()
@@ -20,6 +21,8 @@ motorR = 26
 
 FPH = 0
 H = 0
+totalFrames = 0
+currentFrame = 0
 
 #Setup
 GPIO.setwarnings(False)
@@ -31,10 +34,15 @@ GPIO.setup(motorL,GPIO.OUT)
 GPIO.setup(motorR,GPIO.OUT)
 GPIO.output(motorL,l)
 GPIO.output(motorR,l)
+
+
 def wipe():
 	lcd.clear()
 	lcd.home()
 
+def getCurrentTime():
+	return t.time()
+	
 def init():
 	lcd.message("Timelaspe\nCommand v{}".format(version))
 	t.sleep(3)
@@ -76,7 +84,7 @@ def updateEncoder(c):
 	lastencoded = encoded
 
 def button(c):
-	global FPH,H,stage,encoderVal,setup
+	global FPH,H,stage,encoderVal,setup, totalFrames
 	if(stage == 1):
 		FPH = encoderVal
 		stage = stage + 1
@@ -91,15 +99,17 @@ def button(c):
 			setup = False
 			stage = 0
 			encoderVal = 0
+			totalFrame = FPH * H
 		else:
 			stage = 1
 			encoderVal = 0
 
 def draw():
-	global encoderVal,encoderA,encoderB, stage, FPH, H, encoderButton, setup, re
+	global encoderVal,encoderA,encoderB, stage, FPH, H, setup
+	sp.call("rm pics/*.png")
 	GPIO.add_event_detect(encoderA,GPIO.BOTH,callback=updateEncoder)
 	GPIO.add_event_detect(encoderB,GPIO.BOTH,callback=updateEncoder)
-	GPIO.add_event_detect(encoderButton,GPIO.FALLING,callback=button,bouncetime=3)
+	GPIO.add_event_detect(encoderButton,GPIO.FALLING,callback=button,bouncetime=300)
 	try:
 		while True:
 			wipe()
@@ -119,9 +129,16 @@ def draw():
 					else:
 						lcd.message("Are you sure?\n  Yes  [No]")
 			else:
-				print("Running")
-				moveRight(10)
-				moveLeft(10)
+				## 24(Pi) = 75mm
+				## 75mm = 7.5cm
+				## 7.5cm = motorRight(60)
+				## 1cm = motorRight(60/7.5)
+				## (60/7.5)/ totalFrames 
+				start = getCurrentTime()
+				cf = "-o pics/picture{}.png".format(currentFrame)
+				cmd = sp.call(["raspistill","-vf","-hf",cf], shell=True)
+				
+				t.sleep((getCurrentTime() - start) * (H/FPH))
 
 			t.sleep(0.3)
 	finally:
