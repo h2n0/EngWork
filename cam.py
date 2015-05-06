@@ -120,8 +120,15 @@ def getStringPercent(f,t):
 	return res
 
 def compile():
-	sub.call("ls *.png > stills.txt")
-	sub.call("mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:aspect=16/9:vbitrate=8000000 -vf scale=1920:1080 -o timelapse.avi -mf type=png:fps=24 mf://@stills.txt")
+	lcd.message("Comliling video")
+	sub.call("ls -v *.png > stills.txt")
+	try:
+		sub.call("mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:aspect=16/9:vbitrate=8000000 -vf scale=1920:1080 -o timelapse.avi -mf type=jpeg:fps=24 mf://@stills.txt")
+	except:
+		lcd.message("Failed to \ncompile video")
+		return
+	lcd.messgae("Video compiled:\nSucessfully")
+
 
 def draw():
 	global encoderVal,encoderA,encoderB, stage, FPH, H, setup,delay,currentFrame,totalFrames
@@ -171,5 +178,4 @@ def draw():
 		GPIO.cleanup()
 
 
-revolveMotorLeft(0.5)
 init()
